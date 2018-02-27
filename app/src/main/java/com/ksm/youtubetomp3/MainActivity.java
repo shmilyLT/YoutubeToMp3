@@ -7,11 +7,10 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 
 import com.android.volley.Request;
-import com.android.volley.RequestQueue;
-import com.android.volley.Response;
-import com.android.volley.VolleyError;
-import com.android.volley.toolbox.StringRequest;
-import com.android.volley.toolbox.Volley;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -25,7 +24,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class MainActivity extends AppCompatActivity {
-
+    static boolean check = false;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -44,6 +43,8 @@ public class MainActivity extends AppCompatActivity {
                     e.printStackTrace();
                 } catch (InterruptedException e) {
                     e.printStackTrace();
+                } catch (JSONException e) {
+                    e.printStackTrace();
                 }
             }
         } else {
@@ -51,14 +52,14 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    void handleSendText(Intent intent) throws ExecutionException, InterruptedException {
+    void handleSendText(Intent intent) throws ExecutionException, InterruptedException, JSONException {
         String sharedText = intent.getStringExtra(Intent.EXTRA_TEXT);
         if (sharedText != null) {
             fetchMP3(sharedText);
         }
     }
 
-    private void fetchMP3(String sharedText) throws ExecutionException, InterruptedException {
+    private void fetchMP3(String sharedText) throws ExecutionException, InterruptedException, JSONException {
         System.err.println("SHARED TEXT: " + sharedText);
         String videoId = youtubeVidId(sharedText);
         String api_key = null;
@@ -66,7 +67,18 @@ public class MainActivity extends AppCompatActivity {
         String htmlData = new GetUrlContentTask().execute("https://ytmp3.cc").get();
         api_key = htmlData.substring(htmlData.indexOf("js/converter-1.0.js?")+22, htmlData.indexOf("&=_"));
         System.err.println(api_key);
-        //System.out.println(htmlData);
+
+        // Get Hash
+        String hash = "https://d.ymcdn.cc/check.php?v=" + videoId + "&f=mp3&k=" + api_key + "&_=1";
+        check=true;
+        String hashResult = new GetUrlContentTask().execute(hash).get();
+        check=false;
+        System.out.println(hashResult);
+        JSONObject json = new JSONObject(hashResult);
+        String songHash = json.getString("hash");
+        //System.out.println(songHash);
+        // Download url
+        String download_url = "https://yyd.ymcdn.cc/" + songHash + "/" + videoId;
 
     }
 
@@ -86,6 +98,9 @@ public class MainActivity extends AppCompatActivity {
             }
             try {
                 connection.setRequestMethod("GET");
+                if (check) {
+                connection.setRequestProperty("Referer", "https://ytmp3.cc");
+                }
             } catch (ProtocolException e) {
                 e.printStackTrace();
             }
