@@ -20,7 +20,7 @@ import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.ProtocolException;
 import java.net.URL;
-import java.text.CollationElementIterator;
+import java.util.concurrent.ExecutionException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -38,28 +38,36 @@ public class MainActivity extends AppCompatActivity {
 
         if (Intent.ACTION_SEND.equals(action) && type != null) {
             if ("text/plain".equals(type)) {
-                handleSendText(intent); // Handle text being sent
+                try {
+                    handleSendText(intent); // Handle text being sent
+                } catch (ExecutionException e) {
+                    e.printStackTrace();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
             }
         } else {
             // Handle other intents, such as being started from the home screen
         }
     }
 
-    void handleSendText(Intent intent) {
+    void handleSendText(Intent intent) throws ExecutionException, InterruptedException {
         String sharedText = intent.getStringExtra(Intent.EXTRA_TEXT);
         if (sharedText != null) {
             fetchMP3(sharedText);
         }
     }
 
-    private void fetchMP3(String sharedText) {
-        System.err.println("SHARED TEXT: "+sharedText);
+    private void fetchMP3(String sharedText) throws ExecutionException, InterruptedException {
+        System.err.println("SHARED TEXT: " + sharedText);
         String videoId = youtubeVidId(sharedText);
+        String api_key = null;
         // Instantiate the RequestQueue.
-        new GetUrlContentTask().execute("https://ytmp3.cc");
-        //updateUi.setText(sharedText);
+        String htmlData = new GetUrlContentTask().execute("https://ytmp3.cc").get();
+        api_key = htmlData.substring(htmlData.indexOf("js/converter-1.0.js?")+22, htmlData.indexOf("&=_"));
+        System.err.println(api_key);
+        //System.out.println(htmlData);
 
-        //browser.loadUrl("https://ytmp3.cc");
     }
 
     private class GetUrlContentTask extends AsyncTask<String, Integer, String> {
@@ -105,11 +113,6 @@ public class MainActivity extends AppCompatActivity {
             }
             return content;
         }
-        protected void onPostExecute(String result) {
-            // this is executed on the main thread after the process is over
-            // update your UI here
-            System.err.println(result);
-        }
     }
 
     public static String youtubeVidId(String ytUrl) {
@@ -118,7 +121,7 @@ public class MainActivity extends AppCompatActivity {
                 "^https?://.*(?:youtu.be/|v/|u/\\w/|embed/|watch?v=)([^#&?]*).*$",
                 Pattern.CASE_INSENSITIVE);
         Matcher matcher = pattern.matcher(ytUrl);
-        if (matcher.matches()){
+        if (matcher.matches()) {
             vidId = matcher.group(1);
         }
         return vidId;
