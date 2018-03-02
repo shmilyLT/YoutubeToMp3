@@ -8,6 +8,7 @@ import android.content.pm.PackageManager;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
 import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
@@ -25,6 +26,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -84,10 +86,9 @@ public class FetchActivity extends AppCompatActivity {
                         // TODO handle the response
                         try {
                             if (response!=null) {
-
-                                FileOutputStream outputStream;
-                                String name=songTitle+".mp3";
-                                outputStream = openFileOutput(name, Context.MODE_PRIVATE);
+                                File dir = new File (Environment.DIRECTORY_MUSIC);
+                                File file = new File(dir, songTitle+".mp3");
+                                FileOutputStream outputStream = new FileOutputStream(file);
                                 outputStream.write(response);
                                 outputStream.close();
                                 Toast.makeText(getApplicationContext(), "Download complete.", Toast.LENGTH_LONG).show();
