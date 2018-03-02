@@ -1,20 +1,25 @@
 package com.ksm.youtubetomp3;
 
+import android.Manifest;
+import android.app.DownloadManager;
+import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.net.Uri;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.os.Environment;
+import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.util.Log;
 
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
@@ -24,11 +29,10 @@ import java.util.concurrent.ExecutionException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static android.os.Environment.DIRECTORY_MUSIC;
-
 public class MainActivity extends AppCompatActivity {
     static boolean check = false;
     static File outputFile;
+    String download_url, songTitle;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -82,77 +86,40 @@ public class MainActivity extends AppCompatActivity {
         System.out.println(hashResult);
         JSONObject json = new JSONObject(hashResult);
         String songHash = json.getString("hash");
-        final String songTitle = json.getString("title");
+        songTitle = json.getString("title");
 
         // Download url
-        final String download_url = "https://yyd.ymcdn.cc/" + songHash + "/" + videoId;
+         download_url = "https://yyd.ymcdn.cc/" + songHash + "/" + videoId;
 
-        final Boolean isSDPresent = android.os.Environment.getExternalStorageState().equals(android.os.Environment.MEDIA_MOUNTED);
-        final Boolean isSDSupportedDevice = Environment.isExternalStorageRemovable();
-        new AsyncTask() {
-            @Override
-            protected Object doInBackground(Object... executeParametre) {
-                URL url = null;
-                try {
-                    url = new URL(download_url);
-                } catch (MalformedURLException e) {
-                    e.printStackTrace();
-                }
-                HttpURLConnection conn = null;
-                try {
-                    conn = (HttpURLConnection) url.openConnection();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-                try {
-                    conn.setRequestMethod("GET");
-                } catch (ProtocolException e) {
-                    e.printStackTrace();
-                }
-                try {
-                    conn.connect();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-                    // Save on sd card
-                    outputFile = new File(Environment.getExternalStoragePublicDirectory(DIRECTORY_MUSIC)+"/"+songTitle+".mp3");
-                try {
-                    outputFile.createNewFile();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-                FileOutputStream fos = null;
-                try {
-                    fos = new FileOutputStream(outputFile);
-                } catch (FileNotFoundException e) {
-                    e.printStackTrace();
-                }
-                InputStream inputStream = null;
-                try {
-                    inputStream = conn.getInputStream();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-                byte[] buffer = new byte[1024];//Set buffer type
-                int len1 = 0;//init length
-                try {
-                    while ((len1 = inputStream.read(buffer)) != -1) {
-                        fos.write(buffer, 0, len1);//Write new file
-                    }
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-
-                try {
-                    inputStream.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-                return "Færdig";
+        // Logic for downloading to storage
+//        ClipboardManager clipboard = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
+//        ClipData clip = ClipData.newPlainText("", download_url);
+//        clipboard.setPrimaryClip(clip);
+//        startActivity(new Intent(Intent., Uri.parse(download_url)));
+        if (Build.VERSION.SDK_INT >= 23) {
+            if (checkSelfPermission(android.Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                    == PackageManager.PERMISSION_GRANTED) {
+                Log.e("Permission error","You have permission");
+                download_song();
+            } else {
+                Log.e("Permission error","You have asked for permission");
+                ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, 1);
+                download_song();
             }
+        }
+        else { //you dont need to worry about these stuff below api level 23
+            Log.e("Permission error","You already have the permission");
+            download_song();
+        }
+    }
 
-        }.execute(); // <1>
-
+    public void download_song() {
+        DownloadManager.Request request = new DownloadManager.Request(Uri.parse(download_url));
+        request.allowScanningByMediaScanner();
+        request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
+        request.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, songTitle + ".mp3");
+        DownloadManager manager = (DownloadManager) getSystemService(Context.DOWNLOAD_SERVICE);
+        manager.enqueue(request);
     }
 
     private class GetUrlContentTask extends AsyncTask<String, Integer, String> {
