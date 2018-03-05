@@ -2,9 +2,11 @@ package com.ksm.youtubetomp3;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
+import android.app.DownloadManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
@@ -13,21 +15,9 @@ import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
-import android.widget.Toast;
-
-import com.android.volley.Request;
-import com.android.volley.RequestQueue;
-import com.android.volley.Response;
-import com.android.volley.VolleyError;
-import com.android.volley.toolbox.HurlStack;
-import com.android.volley.toolbox.Volley;
-
 import org.json.JSONException;
 import org.json.JSONObject;
-
 import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
@@ -36,17 +26,15 @@ import java.util.concurrent.ExecutionException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-/**
- * Created by Khurram Saeed Malik on 02/03/2018.
- */
-
 public class FetchActivity extends AppCompatActivity {
     private static boolean check = false;
     private String download_url, songTitle;
+
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
         if (Build.VERSION.SDK_INT >= 23) {
             if (checkSelfPermission(android.Manifest.permission.WRITE_EXTERNAL_STORAGE)
                     == PackageManager.PERMISSION_GRANTED) {
@@ -78,38 +66,17 @@ public class FetchActivity extends AppCompatActivity {
 
     }
 
-    void downloadLogic(String mUrl) {
-        InputStreamVolleyRequest request = new InputStreamVolleyRequest(Request.Method.GET, mUrl,
-                new Response.Listener<byte[]>() {
-                    @Override
-                    public void onResponse(byte[] response) {
-                        // TODO handle the response
-                        try {
-                            if (response!=null) {
-                                File dir = new File (Environment.DIRECTORY_MUSIC);
-                                File file = new File(dir, songTitle+".mp3");
-                                FileOutputStream outputStream = new FileOutputStream(file);
-                                outputStream.write(response);
-                                outputStream.close();
-                                Toast.makeText(getApplicationContext(), "Download complete.", Toast.LENGTH_LONG).show();
-                            }
-                        } catch (Exception e) {
-                            // TODO Auto-generated catch block
-                            Log.d("KEY_ERROR", "UNABLE TO DOWNLOAD FILE");
-                            e.printStackTrace();
-                        }
-                    }
-                } ,new Response.ErrorListener() {
-
-            @Override
-            public void onErrorResponse(VolleyError error) {
-                // TODO handle the error
-                error.printStackTrace();
-            }
-        }, null);
-        RequestQueue mRequestQueue = Volley.newRequestQueue(getApplicationContext(), new HurlStack());
-        mRequestQueue.add(request);
-
+    public void downloadLogic(String URL){
+        DownloadManager downloadManager = (DownloadManager) getSystemService(Context.DOWNLOAD_SERVICE);
+        Uri Download_Uri = Uri.parse(URL);
+        DownloadManager.Request request = new DownloadManager.Request(Download_Uri);
+        request.setAllowedNetworkTypes(DownloadManager.Request.NETWORK_WIFI | DownloadManager.Request.NETWORK_MOBILE);
+        request.setAllowedOverRoaming(true);
+        request.setTitle(songTitle);
+        request.setDescription("Downloading song from youtube");
+        request.setVisibleInDownloadsUi(true);
+        request.setDestinationInExternalPublicDir(Environment.DIRECTORY_MUSIC,  songTitle + ".mp3");
+        downloadManager.enqueue(request);
     }
 
     void handleSendText(Intent intent) throws ExecutionException, InterruptedException, JSONException, IOException {
@@ -143,6 +110,7 @@ public class FetchActivity extends AppCompatActivity {
 
         //Download logic here
         downloadLogic(download_url);
+        finish();
     }
 
     public static String youtubeVidId(String ytUrl) {
