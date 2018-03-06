@@ -28,7 +28,7 @@ import java.util.regex.Pattern;
 
 public class FetchActivity extends AppCompatActivity {
     private static boolean check = false;
-    private String download_url, songTitle;
+    private String download_url, songTitle, sid;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -105,8 +105,20 @@ public class FetchActivity extends AppCompatActivity {
         String songHash = json.getString("hash");
         songTitle = json.getString("title");
 
+        String[] n = new String[]{"odg","ado","jld","tzg","uuj","bkl",
+                "fnw","eeq","ebr","asx","ghn","eal",
+                "hrh","quq","zki","tff","aol","eeu",
+                "kkr","yui","yyd","hdi","ddb","iir",
+                "ihi","heh","xaa","nim","omp","eez",
+                "rpx","cxq","typ","amv","rlv","xnx",
+                "vro","pfg"};
+
+        String sid_request = new FetchActivity.GetUrlContentTask().execute("https://d.ymcdn.cc/progress.php?id=" + songHash).get();
+        JSONObject json2 = new JSONObject(sid_request);
+        sid = json2.getString("sid");
+        String prefix = n[Integer.parseInt(sid)-1];
         // Download url
-        download_url = "https://yyd.ymcdn.cc/" + songHash + "/" + videoId;
+        download_url = "https://" + prefix + ".ymcdn.cc/" + songHash + "/" + videoId;
 
         //Download logic here
         downloadLogic(download_url);
@@ -132,7 +144,7 @@ public class FetchActivity extends AppCompatActivity {
             String content = "", line;
             try {
                 url = new URL(urls[0]);
-                HttpURLConnection connection = null;
+                HttpURLConnection connection;
                 connection = (HttpURLConnection) url.openConnection();
                 assert connection != null;
                 connection.setRequestMethod("GET");
