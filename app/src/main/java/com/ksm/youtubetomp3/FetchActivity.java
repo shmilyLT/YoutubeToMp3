@@ -91,20 +91,17 @@ public class FetchActivity extends AppCompatActivity {
     }
 
     private void fetchMP3(String sharedText) throws ExecutionException, InterruptedException, JSONException, IOException {
-        System.err.println("SHARED TEXT: " + sharedText);
         String videoId = youtubeVidId(sharedText);
-        String api_key = null;
+        String api_key;
         // Instantiate the RequestQueue.
         String htmlData = new FetchActivity.GetUrlContentTask().execute("https://ytmp3.cc").get();
         api_key = htmlData.substring(htmlData.indexOf("js/converter-1.0.js?") + 22, htmlData.indexOf("&=_"));
-        System.err.println(api_key);
 
         // Get Hash
         String hash = "https://d.ymcdn.cc/check.php?v=" + videoId + "&f=mp3&k=" + api_key + "&_=1";
         check = true;
         String hashResult = new FetchActivity.GetUrlContentTask().execute(hash).get();
         check = false;
-        System.out.println(hashResult);
         JSONObject json = new JSONObject(hashResult);
         String songHash = json.getString("hash");
         songTitle = json.getString("title");
@@ -145,7 +142,7 @@ public class FetchActivity extends AppCompatActivity {
     @SuppressLint("StaticFieldLeak")
     private class GetUrlContentTask extends AsyncTask<String, Integer, String> {
         protected String doInBackground(String... urls) {
-            URL url = null;
+            URL url;
             String content = "", line;
             try {
                 url = new URL(urls[0]);
@@ -160,7 +157,7 @@ public class FetchActivity extends AppCompatActivity {
                 connection.setConnectTimeout(5000);
                 connection.setReadTimeout(5000);
                 connection.connect();
-                BufferedReader rd = null;
+                BufferedReader rd;
                 rd = new BufferedReader(new InputStreamReader(connection.getInputStream()));
                 assert rd != null;
                 while ((line = rd.readLine()) != null) {
