@@ -77,7 +77,6 @@ public class FetchActivity extends AppCompatActivity {
         request.setAllowedNetworkTypes(DownloadManager.Request.NETWORK_WIFI | DownloadManager.Request.NETWORK_MOBILE);
         request.setAllowedOverRoaming(true);
         request.setTitle(songTitle);
-        request.setDescription("Downloading song from youtube");
         request.setVisibleInDownloadsUi(true);
         request.setDestinationInExternalPublicDir(Environment.DIRECTORY_MUSIC,  songTitle + ".mp3");
         downloadManager.enqueue(request);
